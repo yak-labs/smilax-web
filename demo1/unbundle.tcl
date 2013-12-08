@@ -1,11 +1,11 @@
-# Chirp script to unbundle scenarios into data directory.
+# Chirp script to unbundle scenarios into _data directory.
 
 set TEXT_rx [/regexp/MustCompile {^/TEXT (.*)$}]
 set all [/io/ioutil/ReadFile /dev/stdin]
 
 proc Create path {
 	set s,v,p,f [dropnull [split $path /]]
-	set dir "data/s.$s/v.$v/p.$p/f.$f"
+	set dir "_data/s.$s/v.$v/p.$p/f.$f"
 	set mode777 511
 	/os/MkdirAll $dir $mode777
 	return [/os/Create $dir/r.0]

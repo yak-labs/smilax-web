@@ -1,9 +1,9 @@
-all: stuff demo1
-stuff:
+all: _stuff_ _demo1_
+_stuff_:
 	cd goapi && make
-	cd smilax && go build
-demo1:
+	go build
+_demo1_:
 	cd demo1; make
 clean:
-	rm -f smilax/smilax
+	rm -f smilax-web
 	cd demo1; make clean

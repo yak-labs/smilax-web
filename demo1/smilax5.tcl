@@ -25,7 +25,7 @@ set BASE64 [/encoding/base64/StdEncoding *]
 
 yproc @ListSites {} {
 	check-site Root
-	foreach f [/io/ioutil/ReadDir "data"] {
+	foreach f [/io/ioutil/ReadDir "_data"] {
 		set fname [$f Name]
 		set m [$SiteDirRx FindStringSubmatch $fname]
 		if {[notnull $m]} {
@@ -36,7 +36,7 @@ yproc @ListSites {} {
 
 yproc @ListVols { site } {
 	check-site $site
-	foreach f [/io/ioutil/ReadDir "data/s.$site"] {
+	foreach f [/io/ioutil/ReadDir "_data/s.$site"] {
 		set fname [$f Name]
 		set m [$VolDirRx FindStringSubmatch $fname]
 		if {[notnull $m]} {
@@ -47,7 +47,7 @@ yproc @ListVols { site } {
 
 yproc @ListPages { site vol } {
 	check-site $site
-	foreach f [/io/ioutil/ReadDir "data/s.$site/v.$vol"] {
+	foreach f [/io/ioutil/ReadDir "_data/s.$site/v.$vol"] {
 		set fname [$f Name]
 		set m [$PageDirRx FindStringSubmatch $fname]
 		if {[notnull $m]} {
@@ -58,7 +58,7 @@ yproc @ListPages { site vol } {
 
 yproc @ListFiles { site vol page } {
 	check-site $site
-	foreach f [/io/ioutil/ReadDir "data/s.$site/v.$vol/p.$page"] {
+	foreach f [/io/ioutil/ReadDir "_data/s.$site/v.$vol/p.$page"] {
 		set fname [$f Name]
 		set m [$FileDirRx FindStringSubmatch $fname]
 		if {[notnull $m]} {
@@ -69,7 +69,7 @@ yproc @ListFiles { site vol page } {
 
 yproc @ListRevs { site vol page file } {
 	check-site $site
-	foreach f [/io/ioutil/ReadDir "data/s.$site/v.$vol/p.$page/f.$file"] {
+	foreach f [/io/ioutil/ReadDir "_data/s.$site/v.$vol/p.$page/f.$file"] {
 		set fname [$f Name]
 		set m [$RevFileRx FindStringSubmatch $fname]
 		if {[notnull $m]} {
@@ -84,7 +84,7 @@ proc @ReadFile { site vol page file } {
 	set revs [lsort [concat [@ListRevs $site $vol $page $file]]]
 	set rev [lindex $revs [expr [llength $revs] - 1]]
 
-	return [/io/ioutil/ReadFile "data/s.$site/v.$vol/p.$page/f.$file/r.$rev"]
+	return [/io/ioutil/ReadFile "_data/s.$site/v.$vol/p.$page/f.$file/r.$rev"]
 }
 
 proc @WriteFile { site vol page file contents } {
@@ -96,11 +96,11 @@ proc @WriteFile { site vol page file contents } {
   # timestamp will get represented as scientific notation.
   set timestamp [/strconv/FormatInt $nowUnix 10]
 
-	/os/MkdirAll "data/s.$site/v.$vol/p.$page/f.$file" 448
-	/io/ioutil/WriteFile "data/s.$site/v.$vol/p.$page/f.$file/r.$timestamp" $contents 384
+	/os/MkdirAll "_data/s.$site/v.$vol/p.$page/f.$file" 448
+	/io/ioutil/WriteFile "_data/s.$site/v.$vol/p.$page/f.$file/r.$timestamp" $contents 384
 
 	# Save no records, but stupid side-effect is to reread all files.
-	db-save-records "data" {}
+	db-save-records "_data" {}
 }
 
 proc @Route { path query } {
@@ -199,8 +199,8 @@ proc @w {} {
 	cred w
 }
 
-# Dir name is "data"
-db-rebuild "data"
+# Dir name is "_data"
+db-rebuild "_data"
 
 ######  DEFINE @-procs ABOVE.
 
