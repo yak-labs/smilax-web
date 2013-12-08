@@ -5,5 +5,5 @@ _stuff_:
 _demo1_:
 	cd demo1; make
 clean:
-	rm -f smilax-web
+	go clean
 	cd demo1; make clean
