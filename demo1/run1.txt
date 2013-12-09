@@ -67,12 +67,10 @@ set WikiPage_rx [RxCompile {^([A-Z]+[a-z]+[A-Z][A-Za-z0-9_]*)$}]
 #}
 
 proc Route { path query } {
-	#ParseForm
-
 	set Query [cred query]
 	set Form [cred form]
 
-	ModeHtml
+	SetContentType text/html
 
 	if {$path eq "/"} {
 		TemporaryRedirect /Main/HomePage.view
@@ -86,10 +84,12 @@ proc Route { path query } {
 
 	if {[set e [catch {
 
-		set rx [RxCompile {^/([A-Z]+[a-z0-9]*)/([A-Z]+[a-z]+[A-Z][A-Za-z0-9_]*)([.]([a-z_]+))?$}]
+		set rx [RxCompile {^/([A-Z]+[a-z0-9]*)/([A-Z]+[a-z]+[A-Z][A-Za-z0-9_]*)([.]([a-z_]+))?(/([-A-Za-z0-9_.~]*))?$}]
 		set m [FindStringSubmatch $rx $path]
 		if {[notnull $m]} {
-			set _,Volume,Page,_,Verb $m
+			set _,Volume,Page,_,Verb,_,File $m
+			if { $Verb eq "" } { set Verb view }
+
 			catch { Note "Method: [cred method]" } _
 			catch { Note "Query: [ShowValue $Query]" } _
 			catch { Note "Form: [ShowValue $Form]" } _
@@ -99,7 +99,9 @@ proc Route { path query } {
 			catch { Note "User: [user]" } _
 			catch { Note "Vol: $Volume" } _
 			catch { Note "Page: $Page" } _
+			catch { Note "File: $File" } _
 			catch { Note "Verb: $Verb" } _
+
 			Note [ht tag a href /Main/HomePage.list LIST]
 			Note [ht tag a href /Main/HomePage.view HomePage]
 			Note [ht tag a href /Main/HomePage.e "Database Demo"]
@@ -111,12 +113,25 @@ proc Route { path query } {
 
 	} what]]} {
 		if {$e < 5} {
+			SetContentType application/binary
 			Puts [ht tag pre "*** ($e) Caught an error:\n$what"]
 		} else {
 			# Rethrow exotic codes.
 			throw $e $what
 		}
 	}
+}
+
+proc Verb/file {} {
+	case $File in {
+		{*.jpg *.JPG *.jpeg *.JPEG} { SetContentType image/jpeg }
+		{*.png *.PNG} { SetContentType image/png }
+		{*.gif *.GIF} { SetContentType image/gif }
+
+		default { SetContentType application/binary }
+	}
+	set contents [ReadFile [site] $Volume $Page $File]
+	Puts $contents
 }
 
 proc Verb/view {} {

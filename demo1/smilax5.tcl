@@ -154,8 +154,8 @@ proc @Puts { str} {
     /fmt/Fprintf [cred w] %s $str
 }
 
-proc @ModeHtml {} {
-    [[cred w] Header] Set "Content-Type" "text/html"
+proc @SetContentType {a} {
+    [[cred w] Header] Set "Content-Type" $a
 }
 
 #proc @TemporaryRedirect url {
