@@ -198,7 +198,11 @@ proc Verb/submit_attach {} {
 
 proc Verb/attach {} {
 	proc middle {} {
-		set files [ListFiles [site] $Volume $Page]
+		#set files [ListFiles [site] $Volume $Page]
+		set files {}
+		foreach f [ListFiles [site] $Volume $Page] {
+			lappend files [ht tag a href "/$Volume/$Page.file/$f" $f]
+		}
 
 		ht tag {form} method "POST" action "/$Volume/$Page.submit_attach" enctype "multipart/form-data" [
 			ht cat [
