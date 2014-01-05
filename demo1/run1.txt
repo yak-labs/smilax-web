@@ -17,6 +17,29 @@ Local Role * {gold 10}
 
 This is the HomePage.
 
+*emphasis*
+
+**bold**
+
+### Heading 3
+
+#### Heading 4
+
+Here is a table...
+
+Name    | Age
+--------|------
+Bob     | 27
+Alice   | 23
+
+Some go...
+
+``` go
+func getTrue() bool {
+    return true
+}
+```
+
 /TEXT /Root/Mixin/MixinFirst/@wiki/0
 
 proc HtmlOutput {} { ht tag html [ht cat [HtmlHead] [HtmlBody] [WikiTail]] }
@@ -142,7 +165,7 @@ proc Verb/view {} {
 				ht tag a href $Page.attach ATTACH]
 	}
 	proc WikiTop {} { ht cat [WideTable [list [list [WikiTopInner]]]] [ht tag br] [ht tag br] }
-	proc middle {} { ht tag listing [WikiText] }
+	proc middle {} { ht raw [markdown [WikiText]] }
 
 	Puts [HtmlOutput]
 }
