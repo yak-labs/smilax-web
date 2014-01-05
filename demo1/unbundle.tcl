@@ -1,7 +1,8 @@
 # Chirp script to unbundle scenarios into _data directory.
 
 set TEXT_rx [/regexp/MustCompile {^/TEXT (.*)$}]
-set all [/io/ioutil/ReadFile /dev/stdin]
+# set all [/io/ioutil/ReadFile /dev/stdin]
+set all [/io/ioutil/ReadAll [/os/Stdin]]
 
 proc Create path {
 	set s,v,p,f [dropnull [split $path /]]
