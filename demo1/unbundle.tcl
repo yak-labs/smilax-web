@@ -5,9 +5,13 @@ set TEXT_rx [/regexp/MustCompile {^/TEXT (.*)$}]
 set all [/io/ioutil/ReadAll [/os/Stdin]]
 
 proc Create path {
-	set s,v,p,f [dropnull [split $path /]]
-	set dir "_data/s.$s/v.$v/p.$p/f.$f"
 	set mode777 511
+    if {$path eq "/table_log.txt"} {
+        /os/MkdirAll "_data" $mode777
+        return [/os/Create "_data$path"]
+    }
+    set s,v,p,f [dropnull [split $path /]]
+    set dir "_data/s.$s/v.$v/p.$p/f.$f"
 	/os/MkdirAll $dir $mode777
 	return [/os/Create $dir/r.0]
 }

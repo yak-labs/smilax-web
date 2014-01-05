@@ -200,7 +200,16 @@ proc @w {} {
 }
 
 # Dir name is "_data"
-db-rebuild "_data"
+proc table-rebuild {} {
+    set log [/io/ioutil/ReadFile "_data/table_log.txt"]
+    foreach line [dropnull [split $log \n]] {
+        if {[string match "#*" $line]} {
+            continue
+        }
+        eval table set $line
+    }
+}
+table-rebuild
 
 ######  DEFINE @-procs ABOVE.
 
@@ -221,18 +230,29 @@ foreach m $mixins {
 	$Zygote Eval [list mixin $m [@ReadFile Root Mixin $m @wiki]]
 }
 
-proc gold-level {user pw} {
-	foreach r [db-select-like [cred site] pw Sys PassWord "$user:$pw" *] {
-		return [$r . Values @ 1]
-	}
-	return 0
+proc check-password {user pw} {
+    set userpw [table get [cred site] Password $user]
+    if {$userpw eq "*"} {
+        return 1
+    }
+    if {$userpw eq $pw} {
+        return 1
+    }
+    return 0
+}
+
+proc role-level {user} {
+    set roles [table get [cred site] Role $user]
+    # TODO support more than just gold.
+    return [lindex $roles 1]
 }
 
 proc lookup-site {} {
-	foreach r [db-select-like Root serve Sys ServeSite [cred host] *] {
-		return [$r . Values @ 1]
-	}
-	error "Unknown Site for HOST=[cred host]"
+    set site [table get Root Serve [cred host]]
+    if {$site eq ""} {
+        error "Unknown Site for HOST=[cred host]"
+    }
+    return $site
 }
 
 # NOW HANDLE REQUESTS
@@ -248,12 +268,18 @@ proc ZygoteHandler {w r} { # TODO: get rid of the args.i w & r.
 		if [notnull $m] {
 			set _,USER,PASSWORD $m
 		}
-		set level [gold-level $USER $PASSWORD]
+
+		# TODO return 401 unauthorized if the password is wrong.
+		if {![check-password $USER $PASSWORD]} {
+		    set level 0
+        } else {
+            set level [role-level $USER $PASSWORD]
+        }
 		if {$level <= 0} {
-			set level [gold-level * $PASSWORD]
+			set level [role-level *]
 		}
 	} else {
-		set level [gold-level * *]
+		set level [role-level *]
 	}
 
 	  cred-put level $level
