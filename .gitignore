@@ -28,3 +28,7 @@ RCS
 # Temp files
 _*
 ,*
+
+# Smilax
+smilax-web
+demo1/leveldb.dat

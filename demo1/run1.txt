@@ -179,13 +179,13 @@ proc DoVerbList {} {
 			lappend zz [ht tag li [ht tag a href $page.view $page]]
 		}
 	}
-	foreach p [ListPages [site] Entity] {
-		set m [FindStringSubmatch $WikiPage_rx $p]
-		if {[notnull $m]} {
-			set _,page $m
-			lappend zz [ht tag li [ht tag a href /Entity/$page.view $page]]
-		}
-	}
+	#foreach p [ListPages [site] Entity] {
+	#	set m [FindStringSubmatch $WikiPage_rx $p]
+	#	if {[notnull $m]} {
+	#		set _,page $m
+	#		lappend zz [ht tag li [ht tag a href /Entity/$page.view $page]]
+	#	}
+	#}
 	ht tag ul [eval ht cat $zz]
 }
 

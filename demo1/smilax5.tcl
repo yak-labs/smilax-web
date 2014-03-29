@@ -199,17 +199,8 @@ proc @w {} {
 	cred w
 }
 
-# Dir name is "_data"
-proc table-rebuild {} {
-    set log [/io/ioutil/ReadFile "_data/table_log.txt"]
-    foreach line [dropnull [split $log \n]] {
-        if {[string match "#*" $line]} {
-            continue
-        }
-        eval table set $line
-    }
-}
-table-rebuild
+# Load the table_log.txt file into LevelDB
+table load
 
 ######  DEFINE @-procs ABOVE.
 
