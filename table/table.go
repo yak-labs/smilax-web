@@ -15,8 +15,10 @@ import (
 	table match Site Table RowPattern ValuePattern -> []{row value}
 */
 
-var data_dir = os.Getenv("SMILAX_DATA_DIR")
 var Lev = levi.New("leveldb.dat")
+
+var data_dir = os.Getenv("SMILAX_DATA_DIR")
+var log_file = Sprintf("%s/table_log.txt", data_dir)
 
 func init() {
 	if len(data_dir) == 0 {
@@ -55,7 +57,7 @@ func TableLoad() {
 		panic(err)
 	}
 	Lev = levi.New("leveldb.dat")
-	text, err := ioutil.ReadFile(Sprintf("%s/table_log.txt", data_dir))
+	text, err := ioutil.ReadFile(log_file)
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +69,7 @@ func TableLoad() {
 		}
 
 		words := ParseList(line)
-		TableSet(words[0].String(), words[1].String(), words[2].String(), words[3].String())
+		leviSet(words[0].String(), words[1].String(), words[2].String(), words[3].String())
 	}
 }
 
@@ -77,10 +79,13 @@ func TableGet(site, table, row string) []T {
 	return ParseList(vals)
 }
 
-func TableSet(site, table, row, values string) {
+func leviSet(site, table, row, values string) {
 	key := Sprintf("/%s/%s/%s", site, table, row)
 	Lev.Set(key, values)
+}
 
+func TableSet(site, table, row, values string) {
+	leviSet(site, table, row, values)
 
 	line := MkList(
 		[]T {
@@ -89,9 +94,17 @@ func TableSet(site, table, row, values string) {
 			MkString(row),
 			MkString(values),
 		}).String()
-
-	err := ioutil.WriteFile(Sprintf("%s/table_log.txt", data_dir), []byte(line), os.ModeAppend)
+	
+	line = Sprintf("%s\n", line)
+	
+	f, err := os.OpenFile(log_file, os.O_APPEND|os.O_WRONLY, 0600)
 	if err != nil {
+		panic(err)
+	}
+
+	defer f.Close()
+
+	if _, err = f.WriteString(line); err != nil {
 		panic(err)
 	}
 }
