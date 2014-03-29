@@ -1,0 +1,324 @@
+
+proc HtmlOutput {} { ht tag html [ht cat [HtmlHead] [HtmlBody] [WikiTail]] }
+proc HtmlHead {} { ht tag head [ht cat [HtmlTitle] [HtmlCss]] }
+proc HtmlTitle {} { ht tag title [ht cat $Volume -- $Page -- $Verb] }
+proc HtmlCss {} { ht cat }
+proc HtmlBody {} { ht tag body class HtmlBody [ht cat [
+	ht tag div class WikiTop [WikiTop]] [
+	ht tag div class middle [middle]] [
+	ht tag div class WikiBottom [WikiBottom]]
+]}
+
+proc WikiTop {} { ht cat [WideTable [list [list "TOP"]]] [ht tag br] [ht tag br] }
+proc middle {} { ht cat "This is the middle; override me!" }
+proc WikiBottom {} { ht cat [ht tag br] [ht tag br] [WideTable [list [list "BOTTOM"]]] }
+proc WikiTail {} { ht tag div class WikiTail [WikiNotes] }
+
+proc WikiText {} { ReadFile [site] $Volume $Page @wiki }
+
+proc WideTable rows {
+	set rr {}
+	foreach row $rows {
+		set dd {}
+		foreach d $row {
+			lappend dd [ht tag td align left $d]
+		}
+		lappend rr [ht tag tr [eval ht cat $dd]]
+	}
+	ht tag table width 99% border 1 cellpadding 5 [eval ht cat $rr]
+}
+set Notes {}
+proc Note x {
+	lappend Notes $x
+}
+proc WikiNotes {} {
+	set nn {}
+	foreach n $Notes {
+		lappend nn [ht tag li class WikiNote $n]
+	}
+	ht tag ul class WikiNotes [eval ht cat $nn]
+}
+			
+set WikiPage_rx [RxCompile {^([A-Z]+[a-z]+[A-Z][A-Za-z0-9_]*)$}]
+
+#proc try {args} { # BROKEN -- TODO --
+#	set z ""
+#	catch {set z [uplevel 1 [list $args]]} _
+#	set z
+#}
+
+proc Route { path query } {
+	set Query [cred query]
+	set Form [cred form]
+
+	SetContentType text/html
+
+	if {$path eq "/"} {
+		TemporaryRedirect /Main/HomePage.view
+		return
+	}
+
+	if {$path eq "/favicon.ico"} {
+		# Leave quietly, without lots of errors.
+		return
+	}
+
+	if {[set e [catch {
+
+		set rx [RxCompile {^/([A-Z]+[a-z0-9]*)/([A-Z]+[a-z]+[A-Z][A-Za-z0-9_]*)([.]([a-z_]+))?(/([-A-Za-z0-9_.~]*))?$}]
+		set m [FindStringSubmatch $rx $path]
+		if {[notnull $m]} {
+			set _,Volume,Page,_,Verb,_,File $m
+			if { $Verb eq "" } { set Verb view }
+
+			catch { Note "Method: [cred method]" } _
+			catch { Note "Query: [ShowValue $Query]" } _
+			catch { Note "Form: [ShowValue $Form]" } _
+			catch { Note "Level: [level]" } _
+			catch { Note "Host: [host]" } _
+			catch { Note "Site: [site]" } _
+			catch { Note "User: [user]" } _
+			catch { Note "Vol: $Volume" } _
+			catch { Note "Page: $Page" } _
+			catch { Note "File: $File" } _
+			catch { Note "Verb: $Verb" } _
+
+			Note [ht tag a href /Main/HomePage.list LIST]
+			Note [ht tag a href /Main/HomePage.view HomePage]
+			Note [ht tag a href /Main/HomePage.e "Database Demo"]
+
+			Verb/$Verb
+		} else {
+			Puts [ht tag pre "Did not understand the path!  <$path>"]
+		}
+
+	} what]]} {
+		if {$e < 5} {
+			SetContentType application/binary
+			Puts [ht tag pre "*** ($e) Caught an error:\n$what"]
+		} else {
+			# Rethrow exotic codes.
+			throw $e $what
+		}
+	}
+}
+
+proc Verb/file {} {
+	case $File in {
+		{*.jpg *.JPG *.jpeg *.JPEG} { SetContentType image/jpeg }
+		{*.png *.PNG} { SetContentType image/png }
+		{*.gif *.GIF} { SetContentType image/gif }
+
+		default { SetContentType application/binary }
+	}
+	set contents [ReadFile [site] $Volume $Page $File]
+	Puts $contents
+}
+
+proc Verb/view {} {
+	proc WikiTopInner {} {
+			ht cat [ht tag b "$Page"] " . . . " [
+				ht tag a href $Page.edit EDIT] " . . . " [
+				ht tag a href $Page.attach ATTACH]
+	}
+	proc WikiTop {} { ht cat [WideTable [list [list [WikiTopInner]]]] [ht tag br] [ht tag br] }
+	proc middle {} { ht raw [markdown [WikiText]] }
+
+	Puts [HtmlOutput]
+}
+
+proc DoVerbList {} {
+	set zz {}
+	foreach p [ListPages [site] $Volume] {
+		set m [FindStringSubmatch $WikiPage_rx $p]
+		if {[notnull $m]} {
+			set _,page $m
+			lappend zz [ht tag li [ht tag a href $page.view $page]]
+		}
+	}
+	#foreach p [ListPages [site] Entity] {
+	#	set m [FindStringSubmatch $WikiPage_rx $p]
+	#	if {[notnull $m]} {
+	#		set _,page $m
+	#		lappend zz [ht tag li [ht tag a href /Entity/$page.view $page]]
+	#	}
+	#}
+	ht tag ul [eval ht cat $zz]
+}
+
+proc Verb/list {} {
+	proc middle {} {
+		DoVerbList
+	}
+
+	Puts [HtmlOutput]
+}
+
+proc ulist list {
+	set v {}
+	foreach e $list {
+		lappend v [ht tag {li} $e]
+	}
+	ht tag {ul} [
+		eval ht cat $v
+	]
+}
+
+proc Verb/zork {} {
+	# To test debugging, cause an error.
+	set cond 1
+	set bogus zork
+	if $cond { list ; $bogus; list }
+}
+proc Verb/submit_attach {} {
+	foreach {name filename,contents} [cred uploads] {
+		WriteFile [site] $Volume $Page $filename $contents
+	}
+	TemporaryRedirect /$Volume/$Page.attach
+}
+
+proc Verb/attach {} {
+	proc middle {} {
+		#set files [ListFiles [site] $Volume $Page]
+		set files {}
+		foreach f [ListFiles [site] $Volume $Page] {
+			lappend files [ht tag a href "/$Volume/$Page.file/$f" $f]
+		}
+
+		ht tag {form} method "POST" action "/$Volume/$Page.submit_attach" enctype "multipart/form-data" [
+			ht cat [
+				ht tag {h2} "ATTACHMENTS FOR /$Volume/$Page"
+			] [
+				ulist $files
+			] [
+				ht tag {input} type "file" name "filestuff"
+			] [
+				ht tag {input} type "submit" value "Upload"
+			] [
+				ht tag {input} type reset
+			] [
+				ht tag {a} href "/$Volume/$Page.view" Cancel
+			]
+        ]
+	}
+	Puts [HtmlOutput]
+}
+
+proc Verb/edit {} {
+	set content ""
+	catch { set content [hget [cred form] "text"] } _
+
+	if [string length $content] {
+		WriteFile [site] $Volume $Page @wiki $content
+		TemporaryRedirect /$Volume/$Page.view
+		return
+	}
+
+	proc middle {} {
+		# Allow using ".edit" to create a new page -- it is empty, if cannot read.
+		set c " "
+		catch { set c [ReadFile [site] $Volume $Page @wiki] } _
+
+		ht tag form method POST action /$Volume/$Page.edit [
+			ht cat [
+				ht tag textarea name text wrap virtual rows 40 cols 100 style "width: 95%; height: 80%;" $c
+			] [
+				ht tag br
+			] [
+				ht tag input type submit value Save
+			] [
+				ht tag input type reset
+			] [
+				ht tag a href /$Volume/$Page.view Cancel
+			]
+		]
+	}
+	Puts [HtmlOutput]
+}
+
+proc Verb/db {} {
+	foreach e [EntityLike [site] Characters * * *] {
+	  foreach field,tag,values [EntityTriples [site] Characters $e * * *] {
+	    foreach value $values {
+			Puts "Entity:$e Field:$field Tag:$tag Value:=$value <br>"  ; # Not properly escaped!
+		}
+		Puts "<br>"
+	  }
+	}
+}
+
+proc HtList list { # Make HTML Unordered Lists from Tcl list
+	set z {}
+	foreach item $list {
+		lappend z [ht tag li $item]
+	}
+	ht tag ul [eval ht cat $z]
+}
+
+proc Verb/e {} {
+	proc middle {} {
+		ht cat [
+			ht tag h3 "All Entities:"
+		] [
+			HtList [EntityLike [site] Characters * * *]
+		] [
+			ht tag h3 "Their Player Names:"
+		] [
+			set ents [EntityLike [site] Characters * * *]
+			set lines {}
+			foreach e $ents {
+				set name [join [EntityGet [site] Characters $e player_name ""] "; "]
+				lappend lines "Entity <$e> has player name <$name>"
+			}
+			HtList $lines
+		] [
+			ht tag h3 "Changing Their Names (broken still):"
+		] [
+			set ents [EntityLike [site] Characters * * *]
+			set lines {}
+			foreach e $ents {
+				EntityPut [site] Characters $e player_name "" "Cedric $e Diggery"
+				set name [join [EntityGet [site] Characters $e player_name ""] "; "]
+				lappend lines "Entity <$e> has player name <$name>"
+			}
+			HtList $lines
+		] [
+			ht tag h3 "Characters of Definite Value (i.e. value begins with word 'The')"
+		] [
+			set ents [EntityLike [site] Characters * * The*]
+			set lines {}
+			foreach e $ents {
+				foreach triple [EntityTriples [site] Characters $e * * The*] {
+					set field,tag,values $triple
+
+					set name [join [EntityGet [site] Characters $e player_name ""] "; "]
+
+					lappend lines "ID: $e -- Name: $name -- Field: $field -- Tag: $tag -- Values: [join $values ", "]"
+				}
+			}
+			HtList $lines
+		] [
+			ht tag h3 "Characters of Unity (i.e. value is 1)"
+		] [
+			set ents [EntityLike [site] Characters * * 1]
+			set lines {}
+			foreach e $ents {
+				foreach triple [EntityTriples [site] Characters $e * * 1] {
+					set field,tag,values $triple
+
+					set name [join [EntityGet [site] Characters $e player_name ""] "; "]
+
+					lappend lines "ID: $e -- Name: $name -- Field: $field -- Tag: $tag -- Values: [join $values ", "]"
+				}
+			}
+			HtList $lines
+		]
+
+
+	}
+	Puts [HtmlOutput]
+
+	Puts "<br><h3>All Database Records:</h3><br>"
+	Verb/db
+}
+

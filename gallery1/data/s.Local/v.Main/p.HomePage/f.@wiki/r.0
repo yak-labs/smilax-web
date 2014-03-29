@@ -1,0 +1,26 @@
+
+This is the HomePage.
+
+*emphasis*
+
+**bold**
+
+### Heading 3
+
+#### Heading 4
+
+Here is a table...
+
+Name    | Age
+--------|------
+Bob     | 27
+Alice   | 23
+
+Some go...
+
+``` go
+func getTrue() bool {
+    return true
+}
+```
+

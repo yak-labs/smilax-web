@@ -1,0 +1,5 @@
+Local Passwd * *
+Local Role * {gold 10}
+Root Serve localhost:8080 Local
+Local Doodad asdf qwer
+Local Doodad asdf qwer
