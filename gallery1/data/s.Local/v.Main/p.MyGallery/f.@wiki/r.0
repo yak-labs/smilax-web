@@ -6,6 +6,12 @@ gallery
 
 **this is bold**
 
+
+/gallery(
+blah blah blah
+/gallery)
+
+
 *this is italic*
 
 this is a line
