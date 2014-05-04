@@ -1,6 +1,6 @@
-DOCKER-VERSION 0.10.0
 FROM busybox:latest
-#ADD smilax-web /opt/smilax-web
-#ADD smilax5.tcl /opt/smilax5.tcl
-ADD _opt_ /opt
-RUN ["/opt/smilax-web", "/opt/smilax5.tcl"]
+ADD _chirp /opt/chirp
+ADD smilax5.tcl /opt/smilax5.tcl
+ADD _lib_ /lib
+RUN chmod +x /opt/* /lib/*
+CMD ["/opt/chirp", "/opt/smilax5.tcl", "/mnt"]

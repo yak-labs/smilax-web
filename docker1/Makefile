@@ -1,11 +1,20 @@
 all:
-	rm -rf _opt_
+	rm -rf _lib_ _chirp
 	cd ../goapi && make
 	cd ../ && go build
-	mkdir _opt_
-	cp ../smilax-web _opt_/
-	set $$(LD_LIBRARY_PATH=/usr/local/lib ldd _opt_/smilax-web) ; \
-	  for x ; do case $$x in /* ) cp -v "$$x" _opt_/ ;; esac ; done
+	cp ../smilax-web _chirp
+	mkdir _lib_
+	set $$(LD_LIBRARY_PATH=/usr/local/lib ldd _chirp) ; \
+	  for x ; do case $$x in /* ) cp -v "$$x" _lib_/ ;; esac ; done
+
+docker-build:
+	sudo docker build -t smilax5 .
+
+docker-serve:
+	sudo docker run  smilax5
+
+docker-cli:
+	sudo docker run -i -t  smilax5  /opt/chirp
 
 clean:
-	rm -f ./_* ./,*
+	-rm -rf ./_* ./,*
